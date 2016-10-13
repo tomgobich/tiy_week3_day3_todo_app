@@ -1,17 +1,32 @@
 $(document).ready(function() {
 
+	// Constants
+	const VIEW_STATE_ALL		= 'show-all';
+	const VIEW_STATE_ACTIVE		= 'show-active';
+	const VIEW_STATE_COMPLETED 	= 'show-completed';
+
 	//------------------------------------------------------------
 	// toDo Object Constructor Function
 	//------------------------------------------------------------
-	function toDo(task, isCompleted)
+	function toDo(task)
 	{
 		this.id 			= Date.now() + Math.floor(Math.random(2000));
 		this.task 			= task;
-		this.isCompleted 	= isCompleted;
+		this.isCompleted 	= false;
 	}
 
 	// Holds all toDo objects
 	var toDos = [];
+
+	// Show what's in local storage on reload
+	if(JSON.parse(localStorage.getItem('toDos')))
+	{ 
+		// Load toDos from local storage
+		toDos = loadFromLocalStorage('toDos');
+
+		// Display to do tasks
+		displayToDo();
+	}
 
 
 
@@ -29,6 +44,16 @@ $(document).ready(function() {
 		// Prevent form from submitting & refreshing page
 		e.preventDefault();
 
+		// Get current view state
+		var viewState = loadFromLocalStorage('viewState');
+
+		// Is view state completed?
+		if(viewState === VIEW_STATE_COMPLETED)
+		{
+			// Yes, show active (allows user to see newly added item)
+			saveInLocalStorage('viewState', VIEW_STATE_ACTIVE);
+		}
+
 		// Create new todo
 		createNewToDo();
 	});
@@ -43,10 +68,13 @@ $(document).ready(function() {
 		var $task = $('.new-todo');
 
 		// Create new toDo item
-		var toDoItem = new toDo($task.val(), false);
+		var toDoItem = new toDo($task.val());
 
 		// Push into ToDo array
 		toDos.push(toDoItem);
+
+		// Add array to local storage
+		saveInLocalStorage('toDos', toDos);
 
 		// Clear value
 		$task.val('');
@@ -58,17 +86,44 @@ $(document).ready(function() {
 
 
 	//------------------------------------------------------------
+	// Saves an item in local storage
+	//------------------------------------------------------------
+	function saveInLocalStorage(name, value)
+	{
+		localStorage.setItem(name, JSON.stringify(value));
+	}
+
+
+
+	//------------------------------------------------------------
+	// Returns an item from local storage
+	//------------------------------------------------------------
+	function loadFromLocalStorage(name)
+	{
+		return JSON.parse(localStorage.getItem(name));
+	}
+
+
+
+	//------------------------------------------------------------
 	// Displays and refreshes all toDos
 	//------------------------------------------------------------
 	function displayToDo()
 	{
-		var $items = $('.items');
+		var $items 		= $('.items');
+		var viewState 	= loadFromLocalStorage('viewState');
 
 		// Empty out old items from task list
 		$items.empty();
 
+		// Update current number of incomplete tasks
+		displayIncompleteTaskCount();
+
+		// Get current dataSet based off current view state
+		dataSet = changeViewState(viewState);
+
 		// Loops through each task in toDos array
-		toDos.forEach(function(task, index)
+		dataSet.forEach(function(task)
 		{
 			// Gets HTML to display for task
 			var toDoHTML = getToDoHTML(task);
@@ -76,6 +131,19 @@ $(document).ready(function() {
 			// Displays task
 			$items.append(toDoHTML);
 		})
+	}
+
+
+
+	//------------------------------------------------------------
+	// Display number of incomplete tasks
+	//------------------------------------------------------------
+	function displayIncompleteTaskCount()
+	{
+		var incompleteTasks = filterTasksByCompletionStatus(false); 
+		var incompleteTaskCount = incompleteTasks.length;
+
+		$('.incomplete-items').text(incompleteTaskCount);
 	}
 
 
@@ -138,8 +206,8 @@ $(document).ready(function() {
 		var self = this;
 
 		// Collects array of incomplete / completed tasks and separates them into 2 variables
-		var incompleteTasks = filterCompletedTasks(false);
-		var completedTasks = filterCompletedTasks(true);
+		var incompleteTasks = filterTasksByCompletionStatus(false);
+		var completedTasks 	= filterTasksByCompletionStatus(true);
 
 		// Does parent have class 'completed'?
 		if($(self).parent().hasClass('completed'))
@@ -153,6 +221,9 @@ $(document).ready(function() {
 			setTaskStatus(self, incompleteTasks, true);
 		}
 
+		// Save to local storage
+		saveInLocalStorage('toDos', toDos);
+
 		// Update todo's on HTML
 		displayToDo();
 	});
@@ -162,7 +233,7 @@ $(document).ready(function() {
 	//------------------------------------------------------------
 	// Filters tasks from toDos array based on completion
 	//------------------------------------------------------------
-	function filterCompletedTasks(isCompleted)
+	function filterTasksByCompletionStatus(isCompleted)
 	{
 		// Filter tasks from toDos array based on completion
 		var tasksToReturn = toDos.filter(function(task)
@@ -209,7 +280,7 @@ $(document).ready(function() {
 	// Event Listener for 'delete' class
 	$('body').on('click', '.delete', function()
 	{
-		self = this;
+		var self = this;
 
 		// Get id from article
 		var selfId = $(self).closest('article').attr('id');
@@ -225,9 +296,104 @@ $(document).ready(function() {
 			}
 		});
 
+		saveInLocalStorage('toDos', toDos);
+
 		// Update todo's on HTML
 		displayToDo();
 	});
+
+
+
+	//------------------------------------------------------------
+	//------------------------------------------------------------
+	//
+	// Switch View State (All | Active | Completed)
+	//
+	//------------------------------------------------------------
+	//------------------------------------------------------------
+
+	// Event Listener for 'show-all' class
+	$('.show-all').on('click', function()
+	{
+		// Filter task list to view state
+		var dataSet = changeViewState(VIEW_STATE_ALL);
+
+		// Display newly setup dataSet
+		displayToDo();
+	});
+
+	// Event Listener for 'show-active' class
+	$('.show-active').on('click', function()
+	{
+		// Filter task list to view state
+		var dataSet = changeViewState(VIEW_STATE_ACTIVE);
+
+		// Display newly setup dataSet
+		displayToDo();
+	});
+
+	// Event Listener for 'show-completed' class
+	$('.show-completed').on('click', function()
+	{
+		// Filter task list to view state
+		var dataSet = changeViewState(VIEW_STATE_COMPLETED);
+
+		// Display newly setup dataSet
+		displayToDo();
+	});
+
+
+
+	//------------------------------------------------------------
+	// Changes the view state of tasks (All | Active | Completed)
+	//------------------------------------------------------------
+	function changeViewState(state)
+	{
+		var dataSet = null;
+
+		// Remove active class from previously active view state
+		$('footer .active').removeClass('active');
+
+		// Determine dataset
+		switch(state)
+		{
+			case VIEW_STATE_ACTIVE:
+
+				// Filter toDos by false completion status
+				dataSet = filterTasksByCompletionStatus(false);
+				
+				// Add active class to new view state
+				$('.show-active').addClass('active');
+
+				break;
+
+			case VIEW_STATE_COMPLETED:
+
+				// Filter toDos by true completion status
+				dataSet = filterTasksByCompletionStatus(true);
+
+				// Add active class to new view state
+				$('.show-completed').addClass('active');
+
+				break;
+
+			default:
+
+				// Default to show all toDos
+				dataSet = toDos;
+
+				// Add active class to new view state
+				$('.show-all').addClass('active');
+
+				break;
+		}
+
+		saveInLocalStorage('viewState', state);
+
+		return dataSet;
+	}
+	
+	
 
 
 });
