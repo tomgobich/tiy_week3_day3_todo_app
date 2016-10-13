@@ -17,6 +17,7 @@ For this assignment we were given a fully designed To Do application that had no
 
 ### Additional features added atop the required:
 - All tasks and current view state are saved and loaded from local storage
+- Basic input validation to make sure the user entered something on submit
 
 ### Tech Used
 
