@@ -17,6 +17,7 @@ For this assignment we were given a fully designed To Do application that had no
 
 ### Additional features added atop the required:
 - All tasks and current view state are saved and loaded from local storage
+- If user adds task while viewing all or active tasks the user will remain on that view state, but if the user adds a task while viewing completed tasks the user will be taken to active tasks so the user can see their new task
 - Basic input validation to make sure the user entered something on submit
 
 ### Tech Used
