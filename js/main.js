@@ -184,20 +184,24 @@ $(document).ready(function() {
 	{
 		var $task = $('.new-todo');
 
-		// Create new toDo item
-		var toDoItem = new toDo($task.val());
+		// Did input pass validation?
+		if(validateTaskInput($task.val()))
+		{
+			// Create new toDo item
+			var toDoItem = new toDo($task.val());
 
-		// Push into ToDo array
-		toDos.push(toDoItem);
+			// Push into ToDo array
+			toDos.push(toDoItem);
 
-		// Add array to local storage
-		saveInLocalStorage('toDos', toDos);
+			// Add array to local storage
+			saveInLocalStorage('toDos', toDos);
 
-		// Clear value
-		$task.val('');
+			// Clear value
+			$task.val('');
 
-		// Display todos
-		displayToDo();
+			// Display todos
+			displayToDo();
+		}
 	}
 
 
@@ -290,6 +294,35 @@ $(document).ready(function() {
 
 		// Return HTML block
 		return toDoHTML;
+	}
+
+
+
+	//------------------------------------------------------------
+	//------------------------------------------------------------
+	//
+	// Input Validation
+	//
+	//------------------------------------------------------------
+	//------------------------------------------------------------
+
+	//------------------------------------------------------------
+	// Task input validation - ensure user entered something
+	//------------------------------------------------------------
+	function validateTaskInput(inputValue)
+	{
+		// Did the user input anything?
+		if(inputValue.length < 1)
+		{
+			// No, alert the user
+			alert('Please enter a task to add');
+
+			// Validation failed
+			return false;
+		}
+
+		// Validation passed
+		return true;
 	}
 
 
